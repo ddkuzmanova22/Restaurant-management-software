@@ -1,5 +1,3 @@
-// Restaurant-management-software.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
 /**
 * 
 * Solution to course project #1
@@ -11,11 +9,12 @@
 * @idnumber 7MI0600539
 * @compiler VS
 * 
-* file project
+* <file with helper funcions> 
 * 
 */
 
 #include <iostream>
+#include <fstream>
 
 int main()
 {
