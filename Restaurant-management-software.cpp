@@ -17,7 +17,10 @@
 #include <fstream>
 
 const char MENUFILE[] = "menu.txt";
+const char ORDERFILE[] = "order.txt";
 const int MAX_MENU_ITEM = 100;
+const int ITEM_NAME_LENGTH = 50;
+
 struct MenuItem {
 	char name[50];
 	double price;
@@ -34,7 +37,7 @@ void showRoleMenu()
 	std::cout << "--- Select user ---" << '\n';
 	std::cout << "1. Waiter" << '\n';
 	std::cout << "2. Manager" << '\n';
-	std::cout << "3. Exit" << '\n';
+	std::cout << "0. Exit" << '\n';
 	std::cout << "-------------------\n";
 	std::cout << "Enter role number:"<<'\n';
 }
@@ -52,9 +55,28 @@ void showWaiterOptions() {
 	std::cout << "-----------------------------\n";
 }
 
+void showManagerOptions() {
+	std::cout << "--- Manager Options ---\n";
+	std::cout << "1. View the menu\n";
+	std::cout << "2. Place an order (item from the menu)\n";
+	std::cout << "3. Cancel an order\n";
+	std::cout << "4. View past orders sorted alphabetically with counts\n";
+	std::cout << "5. View past orders\n";
+	std::cout << "6. Check inventory levels\n";
+	std::cout << "7. Remove an item from inventory\n";
+	std::cout << "8. Add an item to inventory\n";
+	std::cout << "9. View daily turnover\n";
+	std::cout << "10. Reset daily turnover (end-of-day report)\n";
+	std::cout << "11. View all turnovers from a given date to the present\n";
+	std::cout << "12. Add a new product to the menu\n";
+	std::cout << "13. Remove a product from the menu\n";
+	std::cout << "14. Show all available options\n";
+	std::cout << "0. Return to role selection\n";
+	std::cout << "-----------------------\n";
+}
+
 bool loadMenuFromFile(const char menuFile[], MenuItem menu[], int& itemCount)
 {
-	
 	if (!menuFile)
 	{
 		return false;
@@ -81,6 +103,7 @@ void printMenu(const char menuFile[], MenuItem menu[], int& itemCount)
 	if (!isLoaded)
 	{
 		std::cerr << "Error!";
+		return;
 	}
 	for (int i = 0; i < itemCount; i++)
 	{
@@ -88,6 +111,70 @@ void printMenu(const char menuFile[], MenuItem menu[], int& itemCount)
 	}
     
 }
+
+int myStrcmp(const char* firstString, const char* secondString)
+{
+	if (!firstString || !secondString)
+		return 0; 
+
+	while ((*firstString) && ((*firstString) == (*secondString)))
+	{
+		firstString++;
+		secondString++;
+	}
+
+	return (*firstString - *secondString);
+
+}
+
+void writeOrderToFile(const char orderFile[], const char itemName[], int quantity, double totalPrice)
+{
+	std::ofstream file(orderFile, std::ios::app);
+	if (!file.is_open())
+	{
+		return;
+	}
+	file << itemName << " " << quantity<< " " << totalPrice << '\n';
+	file.close();
+}
+
+void addOrder(const char menuFile[], const char orderFile[])
+{
+	MenuItem menu[MAX_MENU_ITEM];
+	int itemCount = 0;
+	unsigned quantity;
+	char itemName[ITEM_NAME_LENGTH];
+	double totalPrice = 0;
+	bool isLoaded = loadMenuFromFile(menuFile, menu, itemCount);
+	if (!isLoaded)
+	{
+		std::cerr << "Error!";
+		return;
+	}
+	std::cout << "Enter item name:" << '\n';
+	std::cin >> itemName;
+	bool isFound = false;
+	double itemPrice;
+	for (int i = 0; i < itemCount; i++)
+	{
+		if (myStrcmp(itemName, menu[i].name)==0)
+		{
+			isFound = true;
+			std::cout << "Enter quantity:" << '\n';
+			std::cin >> quantity;
+			totalPrice = quantity * menu[i].price;	
+			writeOrderToFile(orderFile, itemName, quantity, totalPrice);
+			std::cout << "The order is added" << '\n';
+			break;
+		}
+	}
+	if (!isFound)
+	{
+		std::cout << "The order is canceled" << '\n';
+	}
+}
+
+
 
 int main()
 {
@@ -108,14 +195,15 @@ int main()
 			do
 			{
 				showWaiterOptions();
-				std::cout << "Enter waiter choice:";
+				std::cout << "Enter waiter choice:"<<'\n';
 				std::cin >> waiterChoice;
 				switch (waiterChoice)
 				{
 				case 1:
-					printMenu("menu.txt", menu, itemCount);
+					printMenu(MENUFILE, menu, itemCount);
 					break;
 				case 2:
+					addOrder(MENUFILE, ORDERFILE);
 					break;
 				case 3:
 					break;
@@ -138,12 +226,16 @@ int main()
 		case 2:
 			do
 			{
+				showManagerOptions();
+				std::cout << "Enter manager choice:";
 				std::cin >> managerChoice;
 				switch (managerChoice)
 				{
 				case 1:
+					printMenu(MENUFILE, menu, itemCount);
 					break;
 				case 2:
+					addOrder(MENUFILE, ORDERFILE);
 					break;
 				case 3:
 					break;
@@ -177,14 +269,14 @@ int main()
 				}
 			} while (managerChoice != 0);
 			break;
-		case 3: 
+		case 0: 
 			break;
 		default: 
 			std::cout<<"Invalis choice!Please, try again!"<<'\n';
 			break;
 		}
 	}
-	while (choice != 3);
+	while (choice != 0);
 
 
 
