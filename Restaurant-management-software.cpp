@@ -16,21 +16,88 @@
 #include <iostream>
 #include <fstream>
 
+const char MENUFILE[] = "menu.txt";
+const int MAX_MENU_ITEM = 100;
+struct MenuItem {
+	char name[50];
+	double price;
+};
+
+struct Order {
+	char itemName[50];
+	int quantity;
+	double totalPrice; 
+};
+
 void showRoleMenu()
 {
-	std::cout << "Select user:" << '\n';
-	std::cout << "1) Waiter" << '\n';
-	std::cout << "2) Manager" << '\n';
-	std::cout << "3) Exit" << '\n';
+	std::cout << "--- Select user ---" << '\n';
+	std::cout << "1. Waiter" << '\n';
+	std::cout << "2. Manager" << '\n';
+	std::cout << "3. Exit" << '\n';
+	std::cout << "-------------------\n";
 	std::cout << "Enter role number:"<<'\n';
+}
+
+void showWaiterOptions() {
+	std::cout << "--- All Available Options ---\n";
+	std::cout << "1. Show the menu\n";
+	std::cout << "2. Add an order\n";
+	std::cout << "3. Cancel an order\n";
+	std::cout << "4. View past orders\n";
+	std::cout << "5. Sort and count orders\n";
+	std::cout << "6. Calculate turnover\n";
+	std::cout << "7. Show all available options\n";
+	std::cout << "0. Return to role selection\n";
+	std::cout << "-----------------------------\n";
+}
+
+bool loadMenuFromFile(const char menuFile[], MenuItem menu[], int& itemCount)
+{
+	
+	if (!menuFile)
+	{
+		return false;
+	}
+	std::ifstream file(menuFile);
+	if (!file.is_open())
+	{
+		return false;
+	}
+
+	while (file >> menu[itemCount].name >> menu[itemCount].price)
+	{
+		itemCount++;
+		if (itemCount >= MAX_MENU_ITEM) break;
+		
+	}
+	file.close();
+	return true;
+}
+
+void printMenu(const char menuFile[], MenuItem menu[], int& itemCount)
+{
+	bool isLoaded = loadMenuFromFile(menuFile, menu, itemCount);
+	if (!isLoaded)
+	{
+		std::cerr << "Error!";
+	}
+	for (int i = 0; i < itemCount; i++)
+	{
+		std::cout << i+1 << " " << menu[i].name << '-' << menu[i].price << '\n';
+	}
+    
 }
 
 int main()
 {
+	
 	unsigned choice;
 	unsigned waiterChoice;
 	unsigned managerChoice;
-	
+	MenuItem menu[MAX_MENU_ITEM];
+	int itemCount = 0;
+
 	do {
 		showRoleMenu();
 		std::cin >> choice;
@@ -38,15 +105,15 @@ int main()
 		{
 
 		case 1:
-			std::cout << "Waiter"<<'\n';
-			std::cout << "WaiterChoice"<<'\n';
 			do
 			{
+				showWaiterOptions();
+				std::cout << "Enter waiter choice:";
 				std::cin >> waiterChoice;
 				switch (waiterChoice)
 				{
 				case 1:
-					//showMenu();
+					printMenu("menu.txt", menu, itemCount);
 					break;
 				case 2:
 					break;
@@ -68,9 +135,7 @@ int main()
 				}
 			} while (waiterChoice != 0);
 			break;
-		case 2:std::cout << "Manager";
-			std::cout << "ManagerChoice";
-			
+		case 2:
 			do
 			{
 				std::cin >> managerChoice;
