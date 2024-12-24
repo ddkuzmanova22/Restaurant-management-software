@@ -20,6 +20,7 @@ const char MENUFILE[] = "menu.txt";
 const char ORDERFILE[] = "order.txt";
 const int MAX_MENU_ITEM = 100;
 const int ITEM_NAME_LENGTH = 50;
+const int MAX_ORDERS = 50;
 
 struct MenuItem {
 	char name[50];
@@ -129,6 +130,7 @@ int myStrcmp(const char* firstString, const char* secondString)
 
 void writeOrderToFile(const char orderFile[], const char itemName[], int quantity, double totalPrice)
 {
+
 	std::ofstream file(orderFile, std::ios::app);
 	if (!file.is_open())
 	{
@@ -146,15 +148,17 @@ void addOrder(const char menuFile[], const char orderFile[])
 	char itemName[ITEM_NAME_LENGTH];
 	double totalPrice = 0;
 	bool isLoaded = loadMenuFromFile(menuFile, menu, itemCount);
+
 	if (!isLoaded)
 	{
 		std::cerr << "Error!";
 		return;
 	}
+
 	std::cout << "Enter item name:" << '\n';
 	std::cin >> itemName;
 	bool isFound = false;
-	double itemPrice;
+
 	for (int i = 0; i < itemCount; i++)
 	{
 		if (myStrcmp(itemName, menu[i].name)==0)
@@ -168,22 +172,127 @@ void addOrder(const char menuFile[], const char orderFile[])
 			break;
 		}
 	}
+
 	if (!isFound)
 	{
 		std::cout << "The order is canceled" << '\n';
 	}
 }
 
+bool loadOrderFromFile(const char* orderFile, Order order[], int& orderCount)
+{
+	orderCount = 0;
+	std::ifstream file(orderFile);
 
+	if (!file)
+	{
+		std::cerr << "Error!" << orderFile << '\n';
+		return false;
+	}
+
+	while (file >> order[orderCount].itemName >> order[orderCount].quantity
+		>> order[orderCount].totalPrice) {
+		orderCount++;
+		if (orderCount >= MAX_ORDERS) break; // Ограничение за броя поръчки
+	}
+
+	file.close();
+	return true;
+}
+
+void printOrder(const char orderFile[], Order order[], int& orderCount)
+{
+	bool isLoaded = loadOrderFromFile(orderFile, order, orderCount);
+
+	if (!isLoaded)
+	{
+		std::cerr << "Error!";
+		return;
+	}
+
+	std::cout << "Available orders:" << '\n';
+
+	for (int i = 0; i < orderCount; i++)
+	{
+		std::cout << i + 1 << " " << order[i].itemName << '-' << order[i].quantity << '*' << order[i].totalPrice << '\n';
+	}
+
+}
+
+void cancelorder(const char orderFile[], Order order[], int& orderCount)
+{
+	unsigned cancelindex;
+	unsigned returntooptions;
+	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
+
+	if (!isvalid)
+	{
+		std::cout << "There aren't any orders!" << '\n';
+		return;
+	}
+
+	printOrder(orderFile, order, orderCount);
+
+	std::cout << "Input index of order which you want to cancel "<<'\n';
+	std::cin >> cancelindex;
+
+	if (cancelindex < 0 || cancelindex > orderCount)
+	{
+		std::cout << " Order cancelletion is interrupted!" << '\n';
+		return;
+	}
+
+	for (int i = cancelindex - 1; i < orderCount - 1; i++)
+	{
+		order[i] = order[i + 1];
+	}
+	orderCount--;
+	//imame f
+	std::ofstream file(orderFile);
+	for (int i = 0; i < orderCount; i++) {
+		file << order[i].itemName
+			<< " " << order[i].quantity
+			<< " " << order[i].totalPrice;
+		
+	}
+	std::cout << "the order has been successfully cancelled." << '\n';
+}
+
+void viewPastOrder(const char orderFile[], Order order[], int& orderCount)
+{
+	bool isValid = loadOrderFromFile(orderFile, order, orderCount);
+
+	if (!isValid)
+	{
+		std::cout << "There aren't any orders!";
+		return;
+	}
+
+	printOrder(orderFile, order, orderCount);
+}
+
+//proba 5
+
+void viewPastSortedOrder()
+{
+
+}
+
+
+void checkTurnover()
+{
+
+}
 
 int main()
 {
-	
 	unsigned choice;
 	unsigned waiterChoice;
 	unsigned managerChoice;
 	MenuItem menu[MAX_MENU_ITEM];
 	int itemCount = 0;
+	Order order[MAX_ORDERS];
+	int orderCount = 0;
 
 	do {
 		showRoleMenu();
@@ -206,12 +315,16 @@ int main()
 					addOrder(MENUFILE, ORDERFILE);
 					break;
 				case 3:
+					cancelorder(ORDERFILE, order, orderCount);
 					break;
-				case 4:
+				case 4:			
+					viewPastOrder(ORDERFILE, order, orderCount);
 					break;
 				case 5:
+					
 					break;
 				case 6:
+					printOrder(ORDERFILE, order, orderCount);
 					break;
 				case 7:
 					break;
@@ -272,7 +385,7 @@ int main()
 		case 0: 
 			break;
 		default: 
-			std::cout<<"Invalis choice!Please, try again!"<<'\n';
+			std::cout<<"Invalid choice!Please, try again!"<<'\n';
 			break;
 		}
 	}
