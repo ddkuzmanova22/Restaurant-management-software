@@ -122,6 +122,7 @@ void displayMenuItems(const MenuItem menu[], int& itemCount) {
 
 void printMenu(const char* menuFileName, MenuItem menu[], int& itemCount) {
 	int returnToOptions;
+	itemCount = 0;
 	do {
 		loadMenuFromFile(menuFileName, menu, itemCount);
 
@@ -444,7 +445,7 @@ void checkturnover(const char* orderFile, Order* order, int& orderCount, const c
 
 //6-manager
 
-bool loadWareHouseFromFile(const char* wareHouseFile, Products* wareHouse, int& productCount)
+bool loadWareHouseFromFile(const char* wareHouseFile, Products* products, int& productCount)
 {
 	productCount = 0;
 	std::ifstream file(wareHouseFile);
@@ -453,7 +454,7 @@ bool loadWareHouseFromFile(const char* wareHouseFile, Products* wareHouse, int& 
 		std::cout<< "Error!\n";
 		return false;
 	}
-	while (file >> wareHouse[productCount].productName >> wareHouse[productCount].quantity){
+	while (file >> products[productCount].productName >> products[productCount].quantity){
 		productCount++;
 		if (productCount >= MAX_ITEMS) break; // Ограничение за броя поръчки
 	}
@@ -466,18 +467,18 @@ void displayWareHouseItems(const Products* products, int& productCount) {
 	std::cout << "--- Restaurant Menu ---\n";
 	for (int i = 0; i < productCount; i++) {
 		std::cout << i + 1 << ". " << products[i].productName << " - "
-			<< products[i].quantity << " gr.\n";
+			<< products[i].quantity << "\n";
 	}
 }
 
-void printWareHouseItems(const char* wareHouseFile, Products* wareHouse, int& productCount) {
+void printWareHouseItems(const char* wareHouseFile, Products* products, int& productCount) {
 	int returnToOptions;
 	do {
-		loadWareHouseFromFile(wareHouseFile, wareHouse, productCount);
+		loadWareHouseFromFile(wareHouseFile, products, productCount);
 
 		// Check and display the menu
 		if (productCount > 0) {
-			displayWareHouseItems(wareHouse, productCount);
+			displayWareHouseItems(products, productCount);
 		}
 		else {
 			std::cout << "The menu is empty or could not be loaded correctly.\n";
@@ -500,17 +501,17 @@ void writeProductToFile(const char* warehouseFile, const char* itemName, int qua
 	file.close();
 }
 
-void removeProduct(const char* wareHouseFile, Products* product, int& productCount)
+void removeProduct(const char* wareHouseFile, Products* products, int& productCount)
 {
 	unsigned cancelindex;
-	bool isvalid = loadWareHouseFromFile(wareHouseFile, product, productCount);
+	bool isvalid = loadWareHouseFromFile(wareHouseFile, products, productCount);
 
 	if (!isvalid) {
 		std::cout << "There aren't any orders!" << '\n';
 		return;
 	}
 
-	displayWareHouseItems(product, productCount);
+	displayWareHouseItems(products, productCount);
 
 	std::cout << "Input index of product which you want to cancel " << '\n';
 	std::cin >> cancelindex;
@@ -521,16 +522,57 @@ void removeProduct(const char* wareHouseFile, Products* product, int& productCou
 	}
 
 	for (int i = cancelindex - 1; i < productCount - 1; i++) {
-		product[i] = product[i + 1];
+		products[i] = products[i + 1];
 	}
 	productCount--;
 
 	std::ofstream file(wareHouseFile);
 	for (int i = 0; i < productCount; i++) {
-		file << product[i].productName << " " << product[i].quantity << '\n';
+		file << products[i].productName << " " << products[i].quantity << '\n';
 	}
 	std::cout << "The product has been successfully cancelled." << '\n';
 }
+//8-manager
+void addProduct(const char* wareHouseFilee)
+{
+	Products product[MAX_WAREHOUSE_ITEMS];
+	int productCount = 0;
+	char productName[PRODUCT_NAME_LENGTH];
+	unsigned quantity;
+	bool isLoaded = loadWareHouseFromFile(wareHouseFilee, product, productCount);
+
+	if (!isLoaded)
+	{
+		std::cerr << "Error!";
+		return;
+	}
+	displayWareHouseItems(product, productCount);
+	std::cout << "Enter product name:" << '\n';
+	std::cin >> productName;
+	bool isFound = false;
+
+	for (int i = 0; i < productCount; i++)
+	{
+		if (myStrcmp(productName, product[i].productName) != 0)
+		{
+			isFound = true;
+			std::cout << "Enter quantity:" << '\n';
+			std::cin >> quantity;
+			writeProductToFile(wareHouseFilee, productName, quantity);
+			std::cout << "The product is added" << '\n';
+			break;
+		}
+	}
+
+	if (!isFound)
+	{
+		std::cout << "The product is canceled" << '\n';
+	}
+}
+
+//10
+
+
 //12 add item in menu
 void writeProductToMenu(const char* menuFile, char* itemName, int price) {
 	std::ofstream file(menuFile, std::ios::app);
@@ -554,15 +596,15 @@ void addMenuItem(const char* menuFile)
 		std::cerr << "Error!";
 		return;
 	}
-	printMenu(menuFile, menu, itemCount);
-	std::cout << "Enter item in menu:" << ' ';
+	displayMenuItems(menu, itemCount);
+	std::cout << "Enter item in menu:" << '\n';
 	std::cin >> itemName;
 	bool isFound = false;
 
 	for (int i = 0; i < itemCount; i++){
 		if (myStrcmp(itemName, menu[i].name) != 0){
 			isFound = true;
-			std::cout << "Enter price:";
+			std::cout << "Enter price:" << "\n";
 			std::cin >> price;
 			writeProductToMenu(menuFile, itemName, price);
 			std::cout << "The item is added" << '\n';
@@ -614,7 +656,7 @@ void removeMenuItem(const char* menuFile, MenuItem* menu, int& itemCount)
 		return;
 	}
 
-	printMenu(menuFile, menu, itemCount);
+	displayMenuItems(menu, itemCount);
 	std::cout << "Input index of item which you want to remove " << '\n';
 	std::cin >> cancelindex;
 
@@ -699,7 +741,7 @@ int main()
 			do
 			{
 				showManagerOptions();
-				std::cout << "Enter manager choice:" << "\n";
+				std::cout << "Enter manager choice:"<< "\n";
 				std::cin >> managerChoice;
 				switch (managerChoice)
 				{
@@ -725,11 +767,13 @@ int main()
 					removeProduct(WAREHOUSEFILE, products, productCount);
 					break;
 				case 8:
+					addProduct(WAREHOUSEFILE);
 					break;
 				case 9:
 					checkturnover(ORDERFILE, order, orderCount, currentDate);
 					break;
 				case 10:
+
 					break;
 				case 11:
 					break;
