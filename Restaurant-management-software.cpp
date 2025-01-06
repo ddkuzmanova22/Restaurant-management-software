@@ -17,14 +17,16 @@
 #include <fstream>
 #include <string>
 
-const char MENUFILE[] = "menu.txt";
-const char ORDERFILE[] = "order.txt";
-const char WAREHOUSE[] = "warehouse.txt";
+const char *MENUFILE = "menu.txt";
+const char *ORDERFILE = "order.txt";
+const char *WAREHOUSEFILE = "warehouse.txt";
 const int MAX_MENU_ITEM = 100;
 const int ITEM_NAME_LENGTH = 50;
 const int MAX_ORDERS = 50;
 const int DATE_LENGTH = 11;
 const int PRODUCT_NAME_LENGTH = 50;
+const int MAX_WAREHOUSE_ITEMS = 100;
+const int MAX_ITEMS = 100;
 
 
 struct MenuItem {
@@ -39,7 +41,7 @@ struct Order {
 	char currentDate[DATE_LENGTH];
 };
 
-struct WareHouse {
+struct Products {
 	char productName[50];
 	int quantity;
 };
@@ -108,21 +110,33 @@ bool loadMenuFromFile(const char* menuFile, MenuItem* menu, int& itemCount)
 	file.close();
 	return true;
 }
+//1-waiter
 
-void printMenu(const char* menuFile, MenuItem* menu, int& itemCount)
-{
-	itemCount = 0;
-	bool isLoaded = loadMenuFromFile(menuFile, menu, itemCount);
-	if (!isLoaded)
-	{
-		std::cerr << "Error!";
-		return;
+void displayMenuItems(const MenuItem menu[], int& itemCount) {
+	std::cout << "--- Restaurant Menu ---\n";
+	for (int i = 0; i < itemCount; i++) {
+		std::cout << i + 1 << ". " << menu[i].name << " - "
+			<< menu[i].price << " lv.\n";
 	}
-	for (int i = 0; i < itemCount; i++)
-	{
-		std::cout << i+1 << " " << menu[i].name << '-' << menu[i].price << '\n';
-	}
-    
+}
+
+void printMenu(const char* menuFileName, MenuItem menu[], int& itemCount) {
+	int returnToOptions;
+	do {
+		loadMenuFromFile(menuFileName, menu, itemCount);
+
+		// Check and display the menu
+		if (itemCount > 0) {
+			displayMenuItems(menu, itemCount);
+		}
+		else {
+			std::cout << "The menu is empty or could not be loaded correctly.\n";
+		}
+
+		// Return to functionalities
+		std::cout << "\nPress 0 to return to the waiter options: ";
+		std::cin >> returnToOptions;
+	} while (returnToOptions != 0);
 }
 
 void myStrcpy(char* destination, const char* source) {
@@ -228,7 +242,7 @@ void writeOrderToFile(const char* orderFile, const char* itemName, int quantity,
 	file << itemName<< " " << quantity<< " " << totalPrice << " " << currentDate << "\n";
 	file.close();
 }
-
+//2-waiter
 void addOrder(const char* menuFile, const char* orderFile, char* currentDate)
 {
 	MenuItem menu[MAX_MENU_ITEM];
@@ -243,7 +257,7 @@ void addOrder(const char* menuFile, const char* orderFile, char* currentDate)
 		std::cerr << "Error!";
 		return;
 	}
-	printMenu(menuFile, menu, itemCount);
+	displayMenuItems(menu, itemCount);
 	std::cout << "Enter item name:" << '\n';
 	std::cin >> itemName;
 	bool isFound = false;
@@ -297,7 +311,7 @@ void printOrder(Order* order, int& orderCount)
 	}
 
 }
-
+//3-waiter
 void cancelOrder(const char* orderFile, Order* order, int& orderCount)
 {
 	unsigned cancelindex;
@@ -329,7 +343,7 @@ void cancelOrder(const char* orderFile, Order* order, int& orderCount)
 	}
 	std::cout << "the order has been successfully cancelled." << '\n';
 }
-
+//4-waiter
 void viewPastOrder(const char* orderFile, Order* order, int& orderCount)
 {
 	bool isValid = loadOrderFromFile(orderFile, order, orderCount);
@@ -342,7 +356,7 @@ void viewPastOrder(const char* orderFile, Order* order, int& orderCount)
 	printOrder( order, orderCount );
 }
 
-//5-waiter
+
 void selectionSortOrders(Order* order, int orderCount) {
 	for (int i = 0; i < orderCount - 1; i++) {
 		int minIndex = i;
@@ -360,7 +374,7 @@ void selectionSortOrders(Order* order, int orderCount) {
 		}
 	}
 }
-
+//5-waiter
 void viewPastSortedOrder(const char* orderFile, Order order[], int& orderCount)
 {
 	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
@@ -407,7 +421,7 @@ void takeCurrentDate(char* currentDate)
 	std::cout << "Current date: " << currentDate << "\n";
 
 }
-
+//6-waiter
 void checkturnover(const char* orderFile, Order* order, int& orderCount, const char* currentDate)
 {
 	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
@@ -423,26 +437,56 @@ void checkturnover(const char* orderFile, Order* order, int& orderCount, const c
 			turnover += order[i].totalPrice;
 		}
 	}
-	std::cout << "Turnover: " << turnover << "\n";
+	std::cout << "Total turnover for: " << currentDate << ": " << turnover << " lv." << "\n";
 }
 
-//7
-bool loadWareHouseFromFile(const char* warehouseFile, WareHouse* warehouse, int& orderCount)
+
+
+//6-manager
+
+bool loadWareHouseFromFile(const char* wareHouseFile, Products* wareHouse, int& productCount)
 {
-	orderCount = 0;
-	std::ifstream file(warehouseFile);
+	productCount = 0;
+	std::ifstream file(wareHouseFile);
 
 	if (!file.is_open()){
 		std::cout<< "Error!\n";
 		return false;
 	}
-	while (file >> warehouse[orderCount].productName >> warehouse[orderCount].quantity){
-		orderCount++;
-		if (orderCount >= MAX_ORDERS) break; // Ограничение за броя поръчки
+	while (file >> wareHouse[productCount].productName >> wareHouse[productCount].quantity){
+		productCount++;
+		if (productCount >= MAX_ITEMS) break; // Ограничение за броя поръчки
 	}
 
 	file.close();
 	return true;
+}
+//6-manager
+void displayWareHouseItems(const Products* products, int& productCount) {
+	std::cout << "--- Restaurant Menu ---\n";
+	for (int i = 0; i < productCount; i++) {
+		std::cout << i + 1 << ". " << products[i].productName << " - "
+			<< products[i].quantity << " gr.\n";
+	}
+}
+
+void printWareHouseItems(const char* wareHouseFile, Products* wareHouse, int& productCount) {
+	int returnToOptions;
+	do {
+		loadWareHouseFromFile(wareHouseFile, wareHouse, productCount);
+
+		// Check and display the menu
+		if (productCount > 0) {
+			displayWareHouseItems(wareHouse, productCount);
+		}
+		else {
+			std::cout << "The menu is empty or could not be loaded correctly.\n";
+		}
+
+		// Return to functionalities
+		std::cout << "\nPress 0 to return to the waiter options: ";
+		std::cin >> returnToOptions;
+	} while (returnToOptions != 0);
 }
 
 void writeProductToFile(const char* warehouseFile, const char* itemName, int quantity)
@@ -454,6 +498,38 @@ void writeProductToFile(const char* warehouseFile, const char* itemName, int qua
 
 	file << itemName << " " << quantity << " " << "\n";
 	file.close();
+}
+
+void removeProduct(const char* wareHouseFile, Products* product, int& productCount)
+{
+	unsigned cancelindex;
+	bool isvalid = loadWareHouseFromFile(wareHouseFile, product, productCount);
+
+	if (!isvalid) {
+		std::cout << "There aren't any orders!" << '\n';
+		return;
+	}
+
+	displayWareHouseItems(product, productCount);
+
+	std::cout << "Input index of product which you want to cancel " << '\n';
+	std::cin >> cancelindex;
+
+	if (cancelindex < 0 || cancelindex > productCount) {
+		std::cout << " Order cancelletion is interrupted!" << '\n';
+		return;
+	}
+
+	for (int i = cancelindex - 1; i < productCount - 1; i++) {
+		product[i] = product[i + 1];
+	}
+	productCount--;
+
+	std::ofstream file(wareHouseFile);
+	for (int i = 0; i < productCount; i++) {
+		file << product[i].productName << " " << product[i].quantity << '\n';
+	}
+	std::cout << "The product has been successfully cancelled." << '\n';
 }
 //12 add item in menu
 void writeProductToMenu(const char* menuFile, char* itemName, int price) {
@@ -570,6 +646,8 @@ int main()
 	Order order[MAX_ORDERS];
 	int orderCount = 0;
 	char currentDate[DATE_LENGTH];
+	Products products[MAX_WAREHOUSE_ITEMS];
+	int productCount = 0;
 
 	takeCurrentDate(currentDate);
 	
@@ -606,8 +684,10 @@ int main()
 					checkturnover(ORDERFILE, order, orderCount, currentDate);
 					break;
 				case 7:
+					showWaiterOptions();
 					break;
 				case 0:
+					std::cout << "Return back!" << "\n";
 					break;
 				default:
 					std::cout << "Invalid choice!Please, try again!"<<'\n';
@@ -619,7 +699,7 @@ int main()
 			do
 			{
 				showManagerOptions();
-				std::cout << "Enter manager choice:";
+				std::cout << "Enter manager choice:" << "\n";
 				std::cin >> managerChoice;
 				switch (managerChoice)
 				{
@@ -639,12 +719,15 @@ int main()
 					viewPastOrder(ORDERFILE, order, orderCount);
 					break;
 				case 6:
+					printWareHouseItems(WAREHOUSEFILE, products, productCount);
 					break;
 				case 7:
+					removeProduct(WAREHOUSEFILE, products, productCount);
 					break;
 				case 8:
 					break;
 				case 9:
+					checkturnover(ORDERFILE, order, orderCount, currentDate);
 					break;
 				case 10:
 					break;
@@ -657,8 +740,10 @@ int main()
 					removeMenuItem(MENUFILE, menu, itemCount);
 					break;
 				case 14:
+					showManagerOptions();
 					break;
 				case 0:
+					std::cout << "Return back!" << "\n";
 					break;
 				default:
 					std::cout << "Invalid choice!Please, try again!"<<'\n';
@@ -667,6 +752,7 @@ int main()
 			} while (managerChoice != 0);
 			break;
 		case 0: 
+			std::cout << "Exit!";
 			break;
 		default: 
 			std::cout<<"Invalid choice!Please, try again!"<<'\n';
