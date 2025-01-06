@@ -20,6 +20,7 @@
 const char *MENUFILE = "menu.txt";
 const char *ORDERFILE = "order.txt";
 const char *WAREHOUSEFILE = "warehouse.txt";
+const char* DAILYREPORTFILE = "dailyReport.txt";
 const int MAX_MENU_ITEM = 100;
 const int ITEM_NAME_LENGTH = 50;
 const int MAX_ORDERS = 50;
@@ -570,7 +571,47 @@ void addProduct(const char* wareHouseFilee)
 	}
 }
 
+
+void writeTurnOverToFile(const char* dailyReport, char* currentDate, double turnOver)
+{
+	std::ofstream report(dailyReport, std::ios::app);
+	if (!report.is_open()){
+		std::cout << "Error!";
+		return;
+	}
+	report << currentDate << " " << turnOver << "\n";
+	report.close();
+}
+
 //10
+
+void generateDailyReport(const char* orderFile, const char* dailyReport, char* currentDate) {
+	Order order[MAX_ORDERS];
+	int orderCount = 0;
+	bool isValid = loadOrderFromFile(orderFile, order, orderCount);
+
+	if (!isValid) {
+		std::cout << "Error!";
+		return;
+	}
+
+	double dailyTurnover = 0;
+	for (int i = 0; i < orderCount; i++){
+		if (myStrcmp(currentDate, order[i].currentDate) == 0){
+			dailyTurnover += order[i].totalPrice;
+		}
+	}
+
+	writeTurnOverToFile(dailyReport, currentDate, dailyTurnover);
+	std::cout << "Daily report generated for " << currentDate << " : " << dailyTurnover << "\n";
+	incrementDate(currentDate);
+	saveCurrentDate(currentDate);
+	std::cout << "Current date is " << currentDate << '\n';
+}
+
+
+//11-manager
+
 
 
 //12 add item in menu
@@ -773,7 +814,7 @@ int main()
 					checkturnover(ORDERFILE, order, orderCount, currentDate);
 					break;
 				case 10:
-
+					generateDailyReport(ORDERFILE, DAILYREPORTFILE, currentDate);
 					break;
 				case 11:
 					break;
