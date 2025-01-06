@@ -611,7 +611,38 @@ void generateDailyReport(const char* orderFile, const char* dailyReport, char* c
 
 
 //11-manager
+void displayTurnoverFromDateToCurrentDate(const char* dailyReport, char* startDate, char* currentDate) {
 
+	std::ifstream file(dailyReport);
+	if (!file.is_open())
+	{
+		std::cout << "Error!";
+		return;
+	}
+
+	double turnover = 0;
+	char date[DATE_LENGTH];
+	bool dateFound = false;
+
+	if (!file.is_open()) {
+		std::cout << "Error!\n";
+		return;
+	}
+
+	while (file >> date >> turnover) {
+		// Check if the date is within the specified range
+		if ((myStrcmp(date, startDate) >= 0) && (myStrcmp(date, currentDate) <= 0)) {
+			std::cout << "Date: " << date << " - Turnover: "<< turnover << " lv.\n";
+			dateFound = true;
+		}
+	}
+
+	if (!dateFound) {
+		std::cout << "No data found! " << "\n";
+	}
+	file.close();
+	return;
+}
 
 
 //12 add item in menu
@@ -817,6 +848,10 @@ int main()
 					generateDailyReport(ORDERFILE, DAILYREPORTFILE, currentDate);
 					break;
 				case 11:
+					char startDate[DATE_LENGTH];
+					//function
+				    std::cin >> startDate;
+					displayTurnoverFromDateToCurrentDate(DAILYREPORTFILE, startDate, currentDate);
 					break;
 				case 12:
 					addMenuItem(MENUFILE);
