@@ -17,10 +17,11 @@
 #include <fstream>
 #include <string>
 
-const char *MENUFILE = "menu.txt";
-const char *ORDERFILE = "order.txt";
-const char *WAREHOUSEFILE = "warehouse.txt";
+const char* MENUFILE = "menu.txt";
+const char* ORDERFILE = "order.txt";
+const char* WAREHOUSEFILE = "warehouse.txt";
 const char* DAILYREPORTFILE = "dailyReport.txt";
+const char* RECIPEFILE = "recipe.txt";
 const int MAX_MENU_ITEM = 100;
 const int ITEM_NAME_LENGTH = 50;
 const int MAX_ORDERS = 50;
@@ -47,8 +48,13 @@ struct Products {
 	int quantity;
 };
 
-void showRoleMenu()
-{
+struct  Recipe {
+	char itemName[50];
+	char ingredient[50];
+	int quantityInGrams;
+};
+
+void showRoleMenu() {
 	std::cout << "--- Select user ---\n";
 	std::cout << "1. Waiter\n";
 	std::cout << "2. Manager\n";
@@ -60,7 +66,7 @@ void showRoleMenu()
 void showWaiterOptions() {
 	std::cout << "--- All Available Options ---\n";
 	std::cout << "1. Show the menu\n";
-	std::cout << "2. Add an order\n";
+	std::cout << "2. Add an order (item from the menu)\n";
 	std::cout << "3. Cancel an order\n";
 	std::cout << "4. View past orders\n";
 	std::cout << "5. Sort and count orders\n";
@@ -73,7 +79,7 @@ void showWaiterOptions() {
 void showManagerOptions() {
 	std::cout << "--- Manager Options ---\n";
 	std::cout << "1. View the menu\n";
-	std::cout << "2. Place an order (item from the menu)\n";
+	std::cout << "2. Add an order (item from the menu)\n";
 	std::cout << "3. Cancel an order\n";
 	std::cout << "4. View past orders sorted alphabetically with counts\n";
 	std::cout << "5. View past orders\n";
@@ -90,30 +96,38 @@ void showManagerOptions() {
 	std::cout << "-----------------------\n";
 }
 
-bool loadMenuFromFile(const char* menuFile, MenuItem* menu, int& itemCount)
-{
-	if (!menuFile)
-	{
+
+
+bool compareStrings(const char* str1, const char* str2) {
+	int i = 0;
+	while (str1[i] != '\0' && str2[i] != '\0') {
+		if (str1[i] != str2[i]) {
+			return false;
+		}
+		i++;
+	}
+	return str1[i] == '\0' && str2[i] == '\0';
+}
+
+bool loadMenuFromFile(const char* menuFile, MenuItem* menu, int& itemCount) {
+	if (!menuFile) {
 		return false;
 	}
 	std::ifstream file(menuFile);
-	if (!file.is_open())
-	{
+	if (!file.is_open()) {
 		return false;
 	}
-
-	while (file >> menu[itemCount].name >> menu[itemCount].price)
-	{
+	//Reads a file line by line
+	while (file >> menu[itemCount].name >> menu[itemCount].price) {
 		itemCount++;
-		if (itemCount >= MAX_MENU_ITEM) break;
-		
+		if (itemCount >= MAX_MENU_ITEM) break;		
 	}
 	file.close();
 	return true;
 }
-//1-waiter
 
-void displayMenuItems(const MenuItem menu[], int& itemCount) {
+//The first functionality of a waiter/manager.
+void displayMenuItems(const MenuItem* menu, int& itemCount) {
 	std::cout << "--- Restaurant Menu ---\n";
 	for (int i = 0; i < itemCount; i++) {
 		std::cout << i + 1 << ". " << menu[i].name << " - "
@@ -121,10 +135,10 @@ void displayMenuItems(const MenuItem menu[], int& itemCount) {
 	}
 }
 
-void printMenu(const char* menuFileName, MenuItem menu[], int& itemCount) {
-	int returnToOptions;
-	itemCount = 0;
+void printMenu(const char* menuFileName, MenuItem* menu, int& itemCount) {
+	int returnToOptions;	
 	do {
+		itemCount = 0;
 		loadMenuFromFile(menuFileName, menu, itemCount);
 
 		// Check and display the menu
@@ -132,40 +146,40 @@ void printMenu(const char* menuFileName, MenuItem menu[], int& itemCount) {
 			displayMenuItems(menu, itemCount);
 		}
 		else {
-			std::cout << "The menu is empty or could not be loaded correctly.\n";
+			std::cout << "The menu is empty or could not be loaded correctly.";
 		}
 
 		// Return to functionalities
-		std::cout << "\nPress 0 to return to the waiter options: ";
+		std::cout << "\nPress 0 to return to the waiter options:\n";
 		std::cin >> returnToOptions;
 	} while (returnToOptions != 0);
 }
-
+//Copies one syting into another
 void myStrcpy(char* destination, const char* source) {
-	int i = 0;
-	while (source[i] != '\0') { // Докато не достигнем края на изходния низ
-		destination[i] = source[i]; // Копиране на текущия символ
-		i++;
+	while (*source) {
+		*destination = *source;
+		source++;
+		destination++;
 	}
-	destination[i] = '\0'; // Добавяне на терминиращ символ
+	*destination = '\0';
 }
 
 bool loadCurrentDate(char* date) {
 	std::ifstream file("current_date.txt");
-	if (!file) {
+	if (!file.is_open()) {
 		// If the file does not exist, set the initial date: 2025-01-01
-		std::cerr << "Date file not found. Setting initial date: 2025-01-01\n";
+		std:: cerr << "Date file not found. Setting initial date: 2025-01-01\n";
 		std::ofstream outFile("current_date.txt");
 		if (!outFile) {
 			std::cerr << "Error creating date file!\n";
 			return false;
 		}
 		myStrcpy(date, "2025-01-01");
-		outFile << date;
+		outFile << date; //writes to the file
 		outFile.close();
 		return true;
 	}
-	file >> date;
+	file >> date;//reading the data from the file
 	file.close();
 	return true;
 }
@@ -173,15 +187,11 @@ bool loadCurrentDate(char* date) {
 void incrementDate(char* date) {
 	int year = 2025, month = 1, day = 0;
 
-	// Разделя датата (YYYY-MM-DD)
+	//Splits the date (YYYY-MM-DD)
 	sscanf_s(date, "%d-%d-%d", &year, &month, &day);
-
-	// Увеличава деня
 	day++;
 
-	// Проверка за преминаване към следващ месец
-	if ((month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12) &&
-		day > 31) {
+	if ((month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12) && day > 31) {
 		day = 1;
 		month++;
 	}
@@ -189,7 +199,7 @@ void incrementDate(char* date) {
 		day = 1;
 		month++;
 	}
-	else if (month == 2) { // Февруари
+	else if (month == 2) { 
 		bool isLeap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 		int maxDays = isLeap ? 29 : 28;
 		if (day > maxDays) {
@@ -198,166 +208,288 @@ void incrementDate(char* date) {
 		}
 	}
 
-	// Преминаване към следваща година
 	if (month > 12) {
 		month = 1;
 		year++;
 	}
 
-	// Форматиране на новата дата
+	// Formatting the new date
 	sprintf_s(date, 110, "%04d-%02d-%02d", year, month, day);
 }
 
-void saveCurrentDate(const char date[]) {
+void saveCurrentDate(const char* date) {
 	std::ofstream file("current_date.txt");
-	if (!file) {
+	if (!file.is_open()) {
 		std::cerr << "Error!!\n";
 		return;
 	}
-	file << date; // Записва новата дата
+
+	file << date; // /writes to the file
 	file.close();
 }
 
-int myStrcmp(const char* firstString, const char* secondString)
-{
+int myStrcmp(const char* firstString, const char* secondString) {
 	if (!firstString || !secondString)
 		return 0; 
 
-	while ((*firstString) && ((*firstString) == (*secondString)))
-	{
+	while ((*firstString) && ((*firstString) == (*secondString))) {
 		firstString++;
 		secondString++;
 	}
 
 	return (*firstString - *secondString);
-
 }
-
-void writeOrderToFile(const char* orderFile, const char* itemName, int quantity, double totalPrice, char* currentDate)
-{
+ 
+void writeOrderToFile(const char* orderFile, const char* itemName, int quantity, double totalPrice, char* currentDate) {
 	std::ofstream file(orderFile, std::ios::app);
-	if (!file.is_open())
-	{
+	if (!file.is_open()) {
 		return;
 	}
 
 	file << itemName<< " " << quantity<< " " << totalPrice << " " << currentDate << "\n";
 	file.close();
 }
-//2-waiter
-void addOrder(const char* menuFile, const char* orderFile, char* currentDate)
-{
-	MenuItem menu[MAX_MENU_ITEM];
-	int itemCount = 0;
-	unsigned quantity;
-	char itemName[ITEM_NAME_LENGTH];
-	double totalPrice = 0;
-	bool isLoaded = loadMenuFromFile(menuFile, menu, itemCount);
 
-	if (!isLoaded)
-	{
-		std::cerr << "Error!";
+//It is used for the following functions
+bool loadWareHouseFromFile(const char* wareHouseFile, Products* products, int& productCount) {
+	if (!wareHouseFile) {
+		return false;
+	}
+	productCount = 0;
+	std::ifstream file(wareHouseFile);
+	if (!file.is_open()) {
+		std::cout << "Error!\n";
+		return false;
+	}
+	while (file >> products[productCount].productName >> products[productCount].quantity) {
+		productCount++;
+		if (productCount >= MAX_ITEMS) break;
+	}
+	file.close();
+	return true;
+}
+
+void writeProductToFile(const char* warehouseFile, const char* itemName, int quantity) {
+	std::ofstream file(warehouseFile, std::ios::app);
+	if (!file.is_open()) {
 		return;
 	}
-	displayMenuItems(menu, itemCount);
-	std::cout << "Enter item name:" << '\n';
-	std::cin >> itemName;
-	bool isFound = false;
+	file << itemName << " " << quantity << " " << "\n";
+	file.close();
+}
 
-	for (int i = 0; i < itemCount; i++)
-	{
-		if (myStrcmp(itemName, menu[i].name)==0)
-		{
-			isFound = true;
-			std::cout << "Enter quantity:" << '\n';
-			std::cin >> quantity;
-			totalPrice = quantity * menu[i].price;	
-			writeOrderToFile(orderFile, itemName, quantity, totalPrice, currentDate);
-			std::cout << "The order is added" << '\n';
-			break;
+bool deductFromWarehouse(const char* ingredient, int requiredQuantity, Products* products, int productCount) {
+	for (int i = 0; i < productCount; i++) {
+		if (compareStrings(products[i].productName, ingredient)) {
+			if (products[i].quantity < requiredQuantity) {
+				std::cout << "Insufficient stock for " << ingredient << "!\n";
+				return false;
+			}
+			products[i].quantity -= requiredQuantity;
+			return true;
 		}
 	}
 
-	if (!isFound)
-	{
-		std::cout << "The order is canceled" << '\n';
-	}
+	std::cout << "Missing ingredient: " << ingredient << "\n";
+	return false;
 }
 
-bool loadOrderFromFile(const char* orderFile, Order* order, int& orderCount)
-{
-	orderCount = 0;
-	std::ifstream file(orderFile);
+void saveWarehouse(const char* warehouseFile, Products* products, int productCount) {
+	std::ofstream file(warehouseFile);
 
-	if (!file){
-		std::cerr << "Error!" << orderFile << '\n';
+	if (!file) {
+		std::cerr << "Error: Cannot save to warehouse file!\n";
+		return;
+	}
+
+	for (int i = 0; i < productCount; i++) {
+		file << products[i].productName << " " << products[i].quantity << "\n";
+	}
+	file.close();
+}
+
+bool processOrder(const MenuItem& menuItem, int quantity, Products* products, int& productCount,
+	const Recipe* recipes, int recipeCount, const char* warehouseFile) {
+	for (int i = 0; i < recipeCount; i++) {
+		if (compareStrings(recipes[i].itemName, menuItem.name)) {
+			int requiredQuantity = recipes[i].quantityInGrams * quantity;
+			if (!deductFromWarehouse(recipes[i].ingredient, requiredQuantity, products, productCount)) {
+				std::cout << "Order cannot be fulfilled due to insufficient stock.\n";
+				return false;
+			}
+		}
+	}
+
+	saveWarehouse(warehouseFile, products, productCount);
+	return true;
+}
+
+void saveOrder(const char* orderFile, const MenuItem& menuItem, int quantity, const char* currentDate) {
+	std::ofstream file(orderFile, std::ios::app);
+	if (!file.is_open()) {
+		std::cerr << "Error: Cannot open order file!\n";
+		return;
+	}
+
+	double totalPrice = menuItem.price * quantity;
+	file << menuItem.name << " " << quantity << " " << totalPrice << " " << currentDate << "\n";
+
+	std::cout << "Order added successfully!\n";
+}
+
+bool loadRecipes(const char* recipeFile, Recipe* recipes, int& recipeCount) {
+	if (!recipeFile) {
 		return false;
 	}
-	while (file >> order[orderCount].itemName >> order[orderCount].quantity >> order[orderCount].totalPrice >> order[orderCount].currentDate){
-		orderCount++;
-		if (orderCount >= MAX_ORDERS) break; // Ограничение за броя поръчки
+	std::ifstream file(recipeFile);
+	recipeCount = 0;
+
+	if (!file) {
+		std::cerr << "Error: Cannot open the recipe file!\n";
+		return false;
+	}
+
+	while (file >> recipes[recipeCount].itemName >> recipes[recipeCount].ingredient >> recipes[recipeCount].quantityInGrams) {
+		recipeCount++;
+		if (recipeCount >= MAX_ITEMS) break; // Limit the number of recipes
 	}
 
 	file.close();
 	return true;
 }
 
-void printOrder(Order* order, int& orderCount)
-{
-	for (int i = 0; i < orderCount; i++){
+int findMenuItem(const MenuItem* menu, int itemCount, const char* itemName) {
+	for (int i = 0; i < itemCount; i++) {
+		if (myStrcmp(menu[i].name, itemName) == 0) {
+			return i; 
+		}
+	}
+	return -1; 
+}
+
+//The second functionality of a waiter/manager.
+void addOrder(const char* menuFile, const char* orderFile, const char* warehouseFile, const char* recipeFile, char* currentDate) {
+	
+	MenuItem* menu = new MenuItem[MAX_MENU_ITEM];
+	Products* products = new Products[MAX_ITEMS];
+	Recipe* recipes = new Recipe[MAX_ITEMS];
+
+	int itemCount = 0, productCount = 0, recipeCount = 0;
+	bool isLoaded = (loadMenuFromFile(menuFile, menu, itemCount) && loadWareHouseFromFile(warehouseFile, products, productCount) &&
+		loadRecipes(recipeFile, recipes, recipeCount));
+
+	if (!isLoaded) {
+		std::cerr << "Error: Failed to load data.\n";
+		delete[] menu;
+		delete[] products;
+		delete[] recipes;
+		return;
+	}
+	int returnToOptions=0;
+	do {
+		displayMenuItems(menu, itemCount);
+		char chosenItem[50];
+		int quantity;
+		std::cout << "Enter item name:\n";
+		std::cin >> chosenItem;
+		std::cout << "Enter quantity:\n ";
+		std::cin >> quantity;
+		int menuIndex = findMenuItem(menu, itemCount, chosenItem);
+		if (menuIndex == -1 || quantity <= 0) {
+			std::cout << "Invalid item or quantity!\n";
+			continue;
+		}
+		if (processOrder(menu[menuIndex], quantity, products, productCount, recipes, recipeCount, warehouseFile)) {
+			saveOrder(orderFile, menu[menuIndex], quantity, currentDate);
+		}
+		std::cout << "\nPress 0 to return to options: ";
+		std::cin >> returnToOptions;
+	} while (returnToOptions != 0);
+
+	delete[] menu;
+	delete[] products;
+	delete[] recipes;
+	return;
+}
+
+bool loadOrderFromFile(const char* orderFile, Order* order, int& orderCount) {
+	if (!orderFile) {
+		return false;
+	}
+	orderCount = 0;
+	std::ifstream file(orderFile);
+
+	if (!file.is_open()) {
+		std::cerr << "Error!" << orderFile << '\n';
+		return false;
+	}
+	while (file >> order[orderCount].itemName >> order[orderCount].quantity >> order[orderCount].totalPrice >> order[orderCount].currentDate) {
+		orderCount++;
+		if (orderCount >= MAX_ORDERS) break; 
+	}
+
+	file.close();
+	return true;
+}
+
+void printOrder(Order* order, int& orderCount) {
+	for (int i = 0; i < orderCount; i++) {
 		std::cout << i + 1 
 			<< ". " << "Item name: " << order[i].itemName 
 			<< " - " << "Quantity: " << order[i].quantity 
 			<< " - " << "Total price: " << order[i].totalPrice 
 			<< " - " << " Current date:  " << order[i].currentDate << '\n';
 	}
-
 }
-//3-waiter
-void cancelOrder(const char* orderFile, Order* order, int& orderCount)
-{
+
+//The third functionality of a waiter/manager.
+void cancelOrder(const char* orderFile, Order* order, int& orderCount) {
 	unsigned cancelindex;
 	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
 
-	if (!isvalid){
+	if (!isvalid) {
 		std::cout << "There aren't any orders!" << '\n';
 		return;
 	}
 
-	printOrder( order, orderCount);
+	printOrder(order, orderCount);
 
 	std::cout << "Input index of order which you want to cancel "<<'\n';
 	std::cin >> cancelindex;
 
-	if (cancelindex < 0 || cancelindex > orderCount){
+	if (cancelindex <= 0 || cancelindex > orderCount) {
 		std::cout << " Order cancelletion is interrupted!" << '\n';
 		return;
 	}
 
-	for (int i = cancelindex - 1; i < orderCount - 1; i++){
+	for (int i = cancelindex - 1; i < orderCount - 1; i++) {
 		order[i] = order[i + 1];
 	}
 	orderCount--;
-
+	//writes to the file
 	std::ofstream file(orderFile);
 	for (int i = 0; i < orderCount; i++) {
 		file << order[i].itemName<< " " << order[i].quantity<< " " << order[i].totalPrice << " " << order[i].currentDate << '\n';
 	}
 	std::cout << "the order has been successfully cancelled." << '\n';
 }
-//4-waiter
-void viewPastOrder(const char* orderFile, Order* order, int& orderCount)
-{
-	bool isValid = loadOrderFromFile(orderFile, order, orderCount);
 
-	if (!isValid){
-		std::cout << "There aren't any orders!";
-		return;
-	}
+//The forth functionality of a waiter(fifth of the manager)
+void viewPastOrder(const char* orderFile, Order* order, int& orderCount) {
+	int returnToOptions;
+	do {
+		bool isValid = loadOrderFromFile(orderFile, order, orderCount);
 
-	printOrder( order, orderCount );
+		if (!isValid) {
+			std::cout << "There aren't any orders!";
+			return;
+		}
+
+		printOrder(order, orderCount);
+		std::cout << "\nPress 0 to return to the waiter options:\n";
+		std::cin >> returnToOptions;
+	} while (returnToOptions != 0);
 }
-
 
 void selectionSortOrders(Order* order, int orderCount) {
 	for (int i = 0; i < orderCount - 1; i++) {
@@ -376,18 +508,19 @@ void selectionSortOrders(Order* order, int orderCount) {
 		}
 	}
 }
-//5-waiter
-void viewPastSortedOrder(const char* orderFile, Order order[], int& orderCount)
-{
-	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
 
-	if (!isvalid){
+//The fifth functionality of a waiter(forth of the manager)
+void viewPastSortedOrder(const char* orderFile, Order* order, int& orderCount) {
+	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
+	if (!isvalid) {
 		std::cout << "There aren't any orders!";
 		return;
 	}
 	selectionSortOrders(order, orderCount);
+	std::cout << "---Sorted orders---\n";
 	printOrder(order, orderCount);
-	for (int i = 0; i < orderCount;){
+	//Summarizing orders with the same name
+	for (int i = 0; i < orderCount;) {
 		unsigned counter= 0;
 		const char* currentName = order[i].itemName;
 		while (i < orderCount && myStrcmp(order[i].itemName, currentName ) == 0 ){
@@ -399,22 +532,9 @@ void viewPastSortedOrder(const char* orderFile, Order order[], int& orderCount)
 	}
 }
 
-bool compareStrings(const char* str1, const char* str2) {
-	int i = 0;
-	while (str1[i] != '\0' && str2[i] != '\0') {
-		if (str1[i] != str2[i]) {
-			return false;
-		}
-		i++;
-	}
-	return str1[i] == '\0' && str2[i] == '\0';
-}
-
-void takeCurrentDate(char* currentDate)
-{
+void takeCurrentDate(char* currentDate)	{
 	bool isValid = loadCurrentDate(currentDate);
-	if (!isValid)
-	{
+	if (!isValid) {
 		std::cout << "Error loading the date!\n";
 		return;
 	}
@@ -423,60 +543,41 @@ void takeCurrentDate(char* currentDate)
 	std::cout << "Current date: " << currentDate << "\n";
 
 }
-//6-waiter
-void checkturnover(const char* orderFile, Order* order, int& orderCount, const char* currentDate)
-{
-	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
 
-	if (!isvalid){
-		std::cout << "There aren't any orders!";
-		return;
-	}
-	double turnover = 0;
-	for (int i = 0; i < orderCount; i++){
-		unsigned counter = 0;
-		if(myStrcmp(order[i].currentDate, currentDate) == 0){
-			turnover += order[i].totalPrice;
+//The sixth functionality of a waiter(ninth of the manager)
+void checkturnover(const char* orderFile, Order* order, int& orderCount, const char* currentDate) {
+	int returnToOptions;
+	do {
+		bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
+		if (!isvalid) {
+			std::cout << "There aren't any orders!";
+			return;
 		}
-	}
-	std::cout << "Total turnover for: " << currentDate << ": " << turnover << " lv." << "\n";
+		double turnover = 0;
+		for (int i = 0; i < orderCount; i++) {
+			unsigned counter = 0;
+			if(myStrcmp(order[i].currentDate, currentDate) == 0) {
+				turnover += order[i].totalPrice;
+			}
+		}
+		std::cout << "Total turnover for: " << currentDate << ": " << turnover << " lv." << "\n";
+		std::cout << "\nPress 0 to return to the waiter options:\n";
+		std::cin >> returnToOptions;
+	} while (returnToOptions != 0);
 }
 
-
-
-//6-manager
-
-bool loadWareHouseFromFile(const char* wareHouseFile, Products* products, int& productCount)
-{
-	productCount = 0;
-	std::ifstream file(wareHouseFile);
-
-	if (!file.is_open()){
-		std::cout<< "Error!\n";
-		return false;
-	}
-	while (file >> products[productCount].productName >> products[productCount].quantity){
-		productCount++;
-		if (productCount >= MAX_ITEMS) break; // Ограничение за броя поръчки
-	}
-
-	file.close();
-	return true;
-}
-//6-manager
 void displayWareHouseItems(const Products* products, int& productCount) {
-	std::cout << "--- Restaurant Menu ---\n";
+	std::cout << "--- Warehouse Items: ---\n";
 	for (int i = 0; i < productCount; i++) {
-		std::cout << i + 1 << ". " << products[i].productName << " - "
-			<< products[i].quantity << "\n";
+		std::cout << i + 1 << ". " << products[i].productName << " - " << products[i].quantity << "\n";
 	}
 }
 
+//The sixth functionality of the manager
 void printWareHouseItems(const char* wareHouseFile, Products* products, int& productCount) {
 	int returnToOptions;
 	do {
 		loadWareHouseFromFile(wareHouseFile, products, productCount);
-
 		// Check and display the menu
 		if (productCount > 0) {
 			displayWareHouseItems(products, productCount);
@@ -484,26 +585,14 @@ void printWareHouseItems(const char* wareHouseFile, Products* products, int& pro
 		else {
 			std::cout << "The menu is empty or could not be loaded correctly.\n";
 		}
-
 		// Return to functionalities
-		std::cout << "\nPress 0 to return to the waiter options: ";
+		std::cout << "\nPress 0 to return to the waiter options:\n";
 		std::cin >> returnToOptions;
 	} while (returnToOptions != 0);
 }
 
-void writeProductToFile(const char* warehouseFile, const char* itemName, int quantity)
-{
-	std::ofstream file(warehouseFile, std::ios::app);
-	if (!file.is_open()){
-		return;
-	}
-
-	file << itemName << " " << quantity << " " << "\n";
-	file.close();
-}
-
-void removeProduct(const char* wareHouseFile, Products* products, int& productCount)
-{
+//The seventh functionality of the manager
+void removeProduct(const char* wareHouseFile, Products* products, int& productCount) {
 	unsigned cancelindex;
 	bool isvalid = loadWareHouseFromFile(wareHouseFile, products, productCount);
 
@@ -517,7 +606,7 @@ void removeProduct(const char* wareHouseFile, Products* products, int& productCo
 	std::cout << "Input index of product which you want to cancel " << '\n';
 	std::cin >> cancelindex;
 
-	if (cancelindex < 0 || cancelindex > productCount) {
+	if (cancelindex <= 0 || cancelindex > productCount) {
 		std::cout << " Order cancelletion is interrupted!" << '\n';
 		return;
 	}
@@ -533,17 +622,16 @@ void removeProduct(const char* wareHouseFile, Products* products, int& productCo
 	}
 	std::cout << "The product has been successfully cancelled." << '\n';
 }
-//8-manager
-void addProduct(const char* wareHouseFilee)
-{
+
+//The еighth functionality of the manager
+void addProduct(const char* wareHouseFilee) {
 	Products product[MAX_WAREHOUSE_ITEMS];
 	int productCount = 0;
 	char productName[PRODUCT_NAME_LENGTH];
-	unsigned quantity;
+	int quantity;
 	bool isLoaded = loadWareHouseFromFile(wareHouseFilee, product, productCount);
 
-	if (!isLoaded)
-	{
+	if (!isLoaded) {
 		std::cerr << "Error!";
 		return;
 	}
@@ -552,30 +640,29 @@ void addProduct(const char* wareHouseFilee)
 	std::cin >> productName;
 	bool isFound = false;
 
-	for (int i = 0; i < productCount; i++)
-	{
-		if (myStrcmp(productName, product[i].productName) != 0)
-		{
+	for (int i = 0; i < productCount; i++){
+		if (myStrcmp(productName, product[i].productName) != 0) {
 			isFound = true;
 			std::cout << "Enter quantity:" << '\n';
 			std::cin >> quantity;
-			writeProductToFile(wareHouseFilee, productName, quantity);
-			std::cout << "The product is added" << '\n';
+			if (quantity > 0) {
+				writeProductToFile(wareHouseFilee, productName, quantity);
+				std::cout << "The product is added" << '\n';
+				break;
+			}
+			std::cout << "The product is canceled" << '\n';
 			break;
 		}
 	}
 
-	if (!isFound)
-	{
+	if (!isFound){
 		std::cout << "The product is canceled" << '\n';
 	}
 }
 
-
-void writeTurnOverToFile(const char* dailyReport, char* currentDate, double turnOver)
-{
+void writeTurnOverToFile(const char* dailyReport, char* currentDate, double turnOver) {
 	std::ofstream report(dailyReport, std::ios::app);
-	if (!report.is_open()){
+	if (!report.is_open()) {
 		std::cout << "Error!";
 		return;
 	}
@@ -583,72 +670,75 @@ void writeTurnOverToFile(const char* dailyReport, char* currentDate, double turn
 	report.close();
 }
 
-//10
-
+// The tenth functionality of the manager
 void generateDailyReport(const char* orderFile, const char* dailyReport, char* currentDate) {
-	Order order[MAX_ORDERS];
-	int orderCount = 0;
-	bool isValid = loadOrderFromFile(orderFile, order, orderCount);
+	int returnToOptions;
+	do {
+		Order order[MAX_ORDERS];
+		int orderCount = 0;
+		bool isValid = loadOrderFromFile(orderFile, order, orderCount);
 
-	if (!isValid) {
-		std::cout << "Error!";
-		return;
-	}
-
-	double dailyTurnover = 0;
-	for (int i = 0; i < orderCount; i++){
-		if (myStrcmp(currentDate, order[i].currentDate) == 0){
-			dailyTurnover += order[i].totalPrice;
+		if (!isValid) {
+			std::cout << "Error!";
+			return;
 		}
-	}
+		double dailyTurnover = 0;
+		for (int i = 0; i < orderCount; i++) {
+			if (myStrcmp(currentDate, order[i].currentDate) == 0) {
+				dailyTurnover += order[i].totalPrice;
+			}
+		}
 
-	writeTurnOverToFile(dailyReport, currentDate, dailyTurnover);
-	std::cout << "Daily report generated for " << currentDate << " : " << dailyTurnover << "\n";
-	incrementDate(currentDate);
-	saveCurrentDate(currentDate);
-	std::cout << "Current date is " << currentDate << '\n';
+		writeTurnOverToFile(dailyReport, currentDate, dailyTurnover);
+		std::cout << "Daily report generated for " << currentDate << " : " << dailyTurnover << "\n";
+		incrementDate(currentDate);
+		saveCurrentDate(currentDate);
+		std::cout << "Current date is " << currentDate << '\n';
+		std::cout << "\nPress 0 to return to the waiter options:\n";
+		std::cin >> returnToOptions;
+	} while (returnToOptions != 0);
 }
 
-
-//11-manager
+//The еleventh functionality of the manager
 void displayTurnoverFromDateToCurrentDate(const char* dailyReport, char* startDate, char* currentDate) {
-
-	std::ifstream file(dailyReport);
-	if (!file.is_open())
-	{
-		std::cout << "Error!";
-		return;
-	}
-
-	double turnover = 0;
-	char date[DATE_LENGTH];
-	bool dateFound = false;
-
-	if (!file.is_open()) {
-		std::cout << "Error!\n";
-		return;
-	}
-
-	while (file >> date >> turnover) {
-		// Check if the date is within the specified range
-		if ((myStrcmp(date, startDate) >= 0) && (myStrcmp(date, currentDate) <= 0)) {
-			std::cout << "Date: " << date << " - Turnover: "<< turnover << " lv.\n";
-			dateFound = true;
+	int returnToOptions;
+	do {
+		std::ifstream file(dailyReport);
+		if (!file.is_open()) {
+			std::cout << "Error!";
+			return;
 		}
-	}
 
-	if (!dateFound) {
-		std::cout << "No data found! " << "\n";
-	}
-	file.close();
+		double turnover = 0;
+		char date[DATE_LENGTH];
+		bool dateFound = false;
+
+		if (!file.is_open()) {
+			std::cout << "Error!\n";
+			return;
+		}
+
+		while (file >> date >> turnover) {
+			// Check if the date is within the specified range
+			if ((myStrcmp(date, startDate) >= 0) && (myStrcmp(date, currentDate) <= 0)) {
+				std::cout << "Date: " << date << " - Turnover: " << turnover << " lv.\n";
+				dateFound = true;
+			}
+		}
+
+		if (!dateFound) {
+			std::cout << "No data found! " << "\n";
+		}
+		file.close();
+		std::cout << "\nPress 0 to return to the waiter options:\n";
+		std::cin >> returnToOptions;
+	} while (returnToOptions != 0);
 	return;
 }
 
-
-//12 add item in menu
-void writeProductToMenu(const char* menuFile, char* itemName, int price) {
+void writeProductToMenu(const char* menuFile, char* itemName, double price) {
 	std::ofstream file(menuFile, std::ios::app);
-	if (!file.is_open()){
+	if (!file.is_open()) {
 		return;
 	}
 
@@ -656,51 +746,69 @@ void writeProductToMenu(const char* menuFile, char* itemName, int price) {
 	file.close();
 }
 
-void addMenuItem(const char* menuFile)
-{
+bool isOnlyLetters(const char* str) {
+	for (int i = 0; str[i] != '\0'; ++i) {
+		if (!((str[i] >= 'A' && str[i] <= 'Z') || (str[i] >= 'a' && str[i] <= 'z'))) {
+			return false;
+		}
+	}
+	return true;
+}
+
+//The twelfth functionality of the manager
+void addMenuItem(const char* menuFile) {
 	MenuItem menu[MAX_MENU_ITEM];
 	int itemCount = 0;
 	char itemName[ITEM_NAME_LENGTH];
 	double price=0;
 	bool isLoaded = loadMenuFromFile(menuFile, menu, itemCount);
 
-	if (!isLoaded){
+	if (!isLoaded) {
 		std::cerr << "Error!";
 		return;
 	}
 	displayMenuItems(menu, itemCount);
 	std::cout << "Enter item in menu:" << '\n';
 	std::cin >> itemName;
+	if (!isOnlyLetters(itemName)) {
+		std::cout << "Invalid input\n";
+		return;
+	}
 	bool isFound = false;
 
-	for (int i = 0; i < itemCount; i++){
-		if (myStrcmp(itemName, menu[i].name) != 0){
+	for (int i = 0; i < itemCount; i++) {
+		if (myStrcmp(itemName, menu[i].name) != 0) {
 			isFound = true;
 			std::cout << "Enter price:" << "\n";
 			std::cin >> price;
+			if (price < 0)
+			{
+				std::cout << "Invalid price!\n";
+				std::cin >> price;
+			}
 			writeProductToMenu(menuFile, itemName, price);
 			std::cout << "The item is added" << '\n';
 			break;
 		}
 	}
 
-	if (!isFound){
+	if (!isFound) {
 		std::cout << "The item is already added" << '\n';
 	}
 }
 
-//13 remove item in menu
-
-bool loadMenuItemFromFile(const char* menuFile, MenuItem* menu, int& itemCount)
-{
+bool loadMenuItemFromFile(const char* menuFile, MenuItem* menu, int& itemCount) {
+	if (!menuFile) {
+		return false;
+	}
 	itemCount = 0;
 	std::ifstream file(menuFile);
 
-	if (!file.is_open()){
+	if (!file.is_open()) {
 		std::cerr << "Error!" << menuFile << '\n';
 		return false;
 	}
-	while (file >> menu[itemCount].name >> menu[itemCount].price ){
+	while (file >> menu[itemCount].name >> menu[itemCount].price ) {
 		itemCount++;
 	}
 
@@ -708,22 +816,21 @@ bool loadMenuItemFromFile(const char* menuFile, MenuItem* menu, int& itemCount)
 	return true;
 }
 
-void writeItemToFile(const char* menuFile, const char* itemName, int price)
-{
+void writeItemToFile(const char* menuFile, const char* itemName, int price) {
 	std::ofstream file(menuFile, std::ios::app);
-	if (!file.is_open()){
+	if (!file.is_open()) {
 		return;
 	}
 	file << itemName << " " << price << "\n";
 	file.close();
 }
 
-void removeMenuItem(const char* menuFile, MenuItem* menu, int& itemCount)
-{
+//The thirteenth functionality of the manager
+void removeMenuItem(const char* menuFile, MenuItem* menu, int& itemCount) {
 	unsigned cancelindex;
 	bool isvalid = loadMenuItemFromFile(menuFile, menu, itemCount);
 
-	if (!isvalid){
+	if (!isvalid) {
 		std::cout << "There aren't any items!" << '\n';
 		return;
 	}
@@ -731,8 +838,7 @@ void removeMenuItem(const char* menuFile, MenuItem* menu, int& itemCount)
 	displayMenuItems(menu, itemCount);
 	std::cout << "Input index of item which you want to remove " << '\n';
 	std::cin >> cancelindex;
-
-	if (cancelindex < 0 || cancelindex > itemCount){
+	if (cancelindex <= 0 || cancelindex > itemCount){
 		std::cout << " Items cancelletion is interrupted!" << '\n';
 		return;
 	}
@@ -752,9 +858,7 @@ void removeMenuItem(const char* menuFile, MenuItem* menu, int& itemCount)
 
 int main()
 {
-	unsigned choice;
-	unsigned waiterChoice;
-	unsigned managerChoice;
+	unsigned choice, waiterChoice, managerChoice;
 	MenuItem menu[MAX_MENU_ITEM];
 	int itemCount = 0;
 	Order order[MAX_ORDERS];
@@ -772,18 +876,16 @@ int main()
 		{
 
 		case 1:
-			do
-			{
+			do{
 				showWaiterOptions();
 				std::cout << "Enter waiter choice:"<<'\n';
 				std::cin >> waiterChoice;
-				switch (waiterChoice)
-				{
+				switch (waiterChoice){
 				case 1:
 					printMenu(MENUFILE, menu, itemCount);
 					break;
 				case 2:
-					addOrder(MENUFILE, ORDERFILE,currentDate);
+					addOrder(MENUFILE, ORDERFILE, WAREHOUSEFILE, RECIPEFILE, currentDate);
 					break;
 				case 3:
 					cancelOrder(ORDERFILE, order, orderCount);
@@ -810,18 +912,16 @@ int main()
 			} while (waiterChoice != 0);
 			break;
 		case 2:
-			do
-			{
+			do{
 				showManagerOptions();
 				std::cout << "Enter manager choice:"<< "\n";
 				std::cin >> managerChoice;
-				switch (managerChoice)
-				{
+				switch (managerChoice){
 				case 1:
 					printMenu(MENUFILE, menu, itemCount);
 					break;
 				case 2:
-					addOrder(MENUFILE, ORDERFILE,currentDate);
+					addOrder(MENUFILE, ORDERFILE,WAREHOUSEFILE,RECIPEFILE, currentDate);
 					break;
 				case 3:
 					cancelOrder(ORDERFILE, order, orderCount);
@@ -849,7 +949,7 @@ int main()
 					break;
 				case 11:
 					char startDate[DATE_LENGTH];
-					//function
+					std::cout << "Enter start date:\n";
 				    std::cin >> startDate;
 					displayTurnoverFromDateToCurrentDate(DAILYREPORTFILE, startDate, currentDate);
 					break;
