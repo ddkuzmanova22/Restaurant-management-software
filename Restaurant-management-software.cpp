@@ -623,7 +623,7 @@ void removeProduct(const char* wareHouseFile, Products* products, int& productCo
 	std::cout << "The product has been successfully cancelled." << '\n';
 }
 
-//The åighth functionality of the manager
+//The Ðµighth functionality of the manager
 void addProduct(const char* wareHouseFilee) {
 	Products product[MAX_WAREHOUSE_ITEMS];
 	int productCount = 0;
@@ -699,7 +699,7 @@ void generateDailyReport(const char* orderFile, const char* dailyReport, char* c
 	} while (returnToOptions != 0);
 }
 
-//The åleventh functionality of the manager
+//The Ã¥leventh functionality of the manager
 void displayTurnoverFromDateToCurrentDate(const char* dailyReport, char* startDate, char* currentDate) {
 	int returnToOptions;
 	do {
