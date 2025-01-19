@@ -9,7 +9,7 @@
 * @idnumber 7MI0600539
 * @compiler VS
 * 
-* <file with helper funcions> 
+* <file with all funcions> 
 * 
 */
 
@@ -471,7 +471,7 @@ void cancelOrder(const char* orderFile, Order* order, int& orderCount) {
 	for (int i = 0; i < orderCount; i++) {
 		file << order[i].itemName<< " " << order[i].quantity<< " " << order[i].totalPrice << " " << order[i].currentDate << '\n';
 	}
-	std::cout << "the order has been successfully cancelled." << '\n';
+	std::cout << "Òhe order has been successfully cancelled." << '\n';
 }
 
 //The forth functionality of a waiter(fifth of the manager)
@@ -511,25 +511,30 @@ void selectionSortOrders(Order* order, int orderCount) {
 
 //The fifth functionality of a waiter(forth of the manager)
 void viewPastSortedOrder(const char* orderFile, Order* order, int& orderCount) {
-	bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
-	if (!isvalid) {
-		std::cout << "There aren't any orders!";
-		return;
-	}
-	selectionSortOrders(order, orderCount);
-	std::cout << "---Sorted orders---\n";
-	printOrder(order, orderCount);
-	//Summarizing orders with the same name
-	for (int i = 0; i < orderCount;) {
-		unsigned counter= 0;
-		const char* currentName = order[i].itemName;
-		while (i < orderCount && myStrcmp(order[i].itemName, currentName ) == 0 ){
-			counter += order[i].quantity;
-			i++;
+	int returnToOptions;
+	do {
+		bool isvalid = loadOrderFromFile(orderFile, order, orderCount);
+		if (!isvalid) {
+			std::cout << "There aren't any orders!";
+			return;
 		}
-		std::cout << "Total orders count:";
-		std::cout << "Item name: " << currentName << " - " << "Quantity: " << counter << '\n';
-	}
+		selectionSortOrders(order, orderCount);
+		std::cout << "---Sorted orders---\n";
+		printOrder(order, orderCount);
+		//Summarizing orders with the same name
+		for (int i = 0; i < orderCount;) {
+			unsigned counter = 0;
+			const char* currentName = order[i].itemName;
+			while (i < orderCount && myStrcmp(order[i].itemName, currentName) == 0) {
+				counter += order[i].quantity;
+				i++;
+			}
+			std::cout << "Total orders count:";
+			std::cout << "Item name: " << currentName << " - " << "Quantity: " << counter << '\n';		
+		}
+		std::cout << "\nPress 0 to return to the waiter options:\n";
+		std::cin >> returnToOptions;
+	} while (returnToOptions!=0);
 }
 
 void takeCurrentDate(char* currentDate)	{
@@ -623,7 +628,7 @@ void removeProduct(const char* wareHouseFile, Products* products, int& productCo
 	std::cout << "The product has been successfully cancelled." << '\n';
 }
 
-//The Ðµighth functionality of the manager
+//The åighth functionality of the manager
 void addProduct(const char* wareHouseFilee) {
 	Products product[MAX_WAREHOUSE_ITEMS];
 	int productCount = 0;
@@ -699,7 +704,7 @@ void generateDailyReport(const char* orderFile, const char* dailyReport, char* c
 	} while (returnToOptions != 0);
 }
 
-//The Ã¥leventh functionality of the manager
+//The åleventh functionality of the manager
 void displayTurnoverFromDateToCurrentDate(const char* dailyReport, char* startDate, char* currentDate) {
 	int returnToOptions;
 	do {
@@ -949,7 +954,7 @@ int main()
 					break;
 				case 11:
 					char startDate[DATE_LENGTH];
-					std::cout << "Enter start date:\n";
+					std::cout << "Enter start date:(yyyy-mm-dd)\n";
 				    std::cin >> startDate;
 					displayTurnoverFromDateToCurrentDate(DAILYREPORTFILE, startDate, currentDate);
 					break;
