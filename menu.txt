@@ -1,1 +1,9 @@
-ShopskaSalad 6.5GreekSalad 7.2CaesarSalad 8SpaghettiBolognese 12PepperoniPizza 12CocaCola 2.5MineralWater 1.5Coffee 3Beer 4
+ShopskaSalad 6.5
+GreekSalad 7.2
+CaesarSalad 8
+SpaghettiBolognese 12
+PepperoniPizza 12
+CocaCola 2.5
+MineralWater 1.5
+Coffee 3
+Beer 4
