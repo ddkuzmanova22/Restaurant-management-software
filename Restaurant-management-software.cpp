@@ -55,6 +55,7 @@ struct  Recipe {
 };
 
 void showRoleMenu() {
+	std::cout << "-------------------\n";
 	std::cout << "--- Select user ---\n";
 	std::cout << "1. Waiter\n";
 	std::cout << "2. Manager\n";
@@ -64,12 +65,13 @@ void showRoleMenu() {
 }
 
 void showWaiterOptions() {
+	std::cout << "-----------------------------\n";
 	std::cout << "--- All Available Options ---\n";
 	std::cout << "1. Show the menu\n";
 	std::cout << "2. Add an order (item from the menu)\n";
 	std::cout << "3. Cancel an order\n";
 	std::cout << "4. View past orders\n";
-	std::cout << "5. Sort and count orders\n";
+	std::cout << "5. View past orders sorted alphabetically with counts\n";
 	std::cout << "6. Calculate turnover\n";
 	std::cout << "7. Show all available options\n";
 	std::cout << "0. Return to role selection\n";
@@ -77,6 +79,7 @@ void showWaiterOptions() {
 }
 
 void showManagerOptions() {
+	std::cout << "-----------------------\n";
 	std::cout << "--- Manager Options ---\n";
 	std::cout << "1. View the menu\n";
 	std::cout << "2. Add an order (item from the menu)\n";
@@ -96,7 +99,75 @@ void showManagerOptions() {
 	std::cout << "-----------------------\n";
 }
 
+unsigned charToInt(char ch){
+	return ch - '0';
+}
 
+unsigned stringToNumber(const char* str) {
+	unsigned result = 0;
+	while (*str) {
+		int digit = charToInt(*str);
+		(result *= 10) += digit;
+		str++;
+	}
+	return result;
+}
+
+int myAtoi(const char* str) {
+	if (*str == '-') {
+		return -1 * stringToNumber(str + 1);
+	}
+	return stringToNumber(str);
+}
+
+bool isNumber(const char* str) {
+	if (str == nullptr || str[0] == '\0') {
+		return false;
+	}
+	for (int i = 0; str[i] != '\0'; i++) {
+		if (str[i] < '0' || str[i] > '9') {
+			return false; 
+		}
+	}
+	return true; 
+}
+
+// Функция за проверка дали въведеното е валидно число
+bool isValidNumber(const char* str) {
+	if (str == nullptr || str[0] == '\0') {
+		return false;
+	}
+
+	int num = atoi(str);
+	if (num == 0) {
+		if (str[0] == '0' && str[1] == '\0') {
+			return true;  
+		}
+		return false;  
+	}
+
+	return true;  
+}
+
+int getValidInput() {
+	char input[100];  // input buffer
+	bool validInput = false;
+	int returnToOptions;
+	
+	while (!validInput) {
+		//std::cout << "Press 0 to return:\n";
+		std::cin >> input;  // read the input as a string
+
+		if (isValidNumber(input)) {
+			returnToOptions = myAtoi(input);  // convert the string to a number
+			validInput = true;  
+		}
+		else {
+			std::cout << "Press 0 to return to the options!\n";
+		}
+	}
+	return returnToOptions;  
+}
 
 bool compareStrings(const char* str1, const char* str2) {
 	int i = 0;
@@ -151,7 +222,7 @@ void printMenu(const char* menuFileName, MenuItem* menu, int& itemCount) {
 
 		// Return to functionalities
 		std::cout << "\nPress 0 to return to the waiter options:\n";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput();
 	} while (returnToOptions != 0);
 }
 //Copies one syting into another
@@ -392,7 +463,7 @@ void addOrder(const char* menuFile, const char* orderFile, const char* warehouse
 		int quantity;
 		std::cout << "Enter item name:\n";
 		std::cin >> chosenItem;
-		std::cout << "Enter quantity:\n ";
+		std::cout << "Enter quantity:\n";
 		std::cin >> quantity;
 		int menuIndex = findMenuItem(menu, itemCount, chosenItem);
 		if (menuIndex == -1 || quantity <= 0) {
@@ -403,7 +474,7 @@ void addOrder(const char* menuFile, const char* orderFile, const char* warehouse
 			saveOrder(orderFile, menu[menuIndex], quantity, currentDate);
 		}
 		std::cout << "\nPress 0 to return to options: ";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput();
 	} while (returnToOptions != 0);
 
 	delete[] menu;
@@ -471,7 +542,7 @@ void cancelOrder(const char* orderFile, Order* order, int& orderCount) {
 	for (int i = 0; i < orderCount; i++) {
 		file << order[i].itemName<< " " << order[i].quantity<< " " << order[i].totalPrice << " " << order[i].currentDate << '\n';
 	}
-	std::cout << "Тhe order has been successfully cancelled." << '\n';
+	std::cout << "The order has been successfully cancelled." << '\n';
 }
 
 //The forth functionality of a waiter(fifth of the manager)
@@ -487,7 +558,7 @@ void viewPastOrder(const char* orderFile, Order* order, int& orderCount) {
 
 		printOrder(order, orderCount);
 		std::cout << "\nPress 0 to return to the waiter options:\n";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput();
 	} while (returnToOptions != 0);
 }
 
@@ -529,11 +600,11 @@ void viewPastSortedOrder(const char* orderFile, Order* order, int& orderCount) {
 				counter += order[i].quantity;
 				i++;
 			}
-			std::cout << "Total orders count:";
-			std::cout << "Item name: " << currentName << " - " << "Quantity: " << counter << '\n';		
+			std::cout << "Total orders count: ";
+			std::cout << currentName << " - " << "Quantity: " << counter << '\n';		
 		}
 		std::cout << "\nPress 0 to return to the waiter options:\n";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput();
 	} while (returnToOptions!=0);
 }
 
@@ -567,7 +638,7 @@ void checkturnover(const char* orderFile, Order* order, int& orderCount, const c
 		}
 		std::cout << "Total turnover for: " << currentDate << ": " << turnover << " lv." << "\n";
 		std::cout << "\nPress 0 to return to the waiter options:\n";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput(); 
 	} while (returnToOptions != 0);
 }
 
@@ -592,7 +663,7 @@ void printWareHouseItems(const char* wareHouseFile, Products* products, int& pro
 		}
 		// Return to functionalities
 		std::cout << "\nPress 0 to return to the waiter options:\n";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput();
 	} while (returnToOptions != 0);
 }
 
@@ -700,7 +771,7 @@ void generateDailyReport(const char* orderFile, const char* dailyReport, char* c
 		saveCurrentDate(currentDate);
 		std::cout << "Current date is " << currentDate << '\n';
 		std::cout << "\nPress 0 to return to the waiter options:\n";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput(); 
 	} while (returnToOptions != 0);
 }
 
@@ -736,7 +807,7 @@ void displayTurnoverFromDateToCurrentDate(const char* dailyReport, char* startDa
 		}
 		file.close();
 		std::cout << "\nPress 0 to return to the waiter options:\n";
-		std::cin >> returnToOptions;
+		returnToOptions = getValidInput(); 
 	} while (returnToOptions != 0);
 	return;
 }
@@ -876,7 +947,7 @@ int main()
 	
 	do {
 		showRoleMenu();
-		std::cin >> choice;
+		choice = getValidInput(); //std::cin >> choice;
 		switch (choice)
 		{
 
@@ -884,7 +955,8 @@ int main()
 			do{
 				showWaiterOptions();
 				std::cout << "Enter waiter choice:"<<'\n';
-				std::cin >> waiterChoice;
+				waiterChoice=getValidInput();//std::cin >> waiterChoice;
+
 				switch (waiterChoice){
 				case 1:
 					printMenu(MENUFILE, menu, itemCount);
@@ -920,7 +992,7 @@ int main()
 			do{
 				showManagerOptions();
 				std::cout << "Enter manager choice:"<< "\n";
-				std::cin >> managerChoice;
+				managerChoice = getValidInput(); //std::cin >> managerChoice;
 				switch (managerChoice){
 				case 1:
 					printMenu(MENUFILE, menu, itemCount);
